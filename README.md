@@ -2,8 +2,7 @@
 
 A RAG assistant that answers questions from a company IT policy PDF, shows the pages it used, and escalates to a human agent when it is not confident.
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sreshtanaik/rag-customer-support-assistant/blob/main/RAG_Customer_Support.ipynb)
-
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sreshtanaik/RAG_Customer_Support_Assistant/blob/main/RAG_Customer_Support_Assistant.ipynb)
 ## How it works
 
 PDF -> chunks -> embeddings -> ChromaDB -> retrieve top 3 chunks. A LangGraph workflow then checks the retrieval score: if it is close enough, the model answers with source pages, otherwise the question is escalated to a human agent.

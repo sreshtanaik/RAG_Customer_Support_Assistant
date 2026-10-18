@@ -6,3 +6,4 @@ venv/
 chroma_db/
 .ipynb_checkpoints/
 *.pdf
+.env

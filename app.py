@@ -1,11 +1,11 @@
-"""RAG Customer Support Assistant - Streamlit app.
+"""RAG Customer Support Assistant - Streamlit app with Supabase login.
 
 Run with:  streamlit run app.py
 """
 
 import streamlit as st
 
-from rag import config
+from rag import auth, config
 from rag.graph import build_graph
 from rag.llm import Flant5Generator
 from rag.store import KnowledgeBase, load_embeddings
@@ -25,25 +25,68 @@ def get_generator():
     return Flant5Generator()
 
 
-# ---------- Per-session state ----------
+# ---------- Login gate: nothing below runs until the user is signed in ----------
+
+if "user_id" not in st.session_state:
+    st.title("🔐 RAG Support Assistant")
+    st.caption("Log in or create an account to continue.")
+    login_tab, signup_tab = st.tabs(["Log in", "Sign up"])
+
+    with login_tab:
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_password")
+        if st.button("Log in"):
+            try:
+                client = auth.new_client()
+                res = auth.sign_in(client, email, password)
+                st.session_state.client = client
+                st.session_state.user_id = res.user.id
+                st.session_state.email = res.user.email
+                st.rerun()
+            except Exception as e:
+                st.error(f"Login failed: {e}")
+
+    with signup_tab:
+        new_email = st.text_input("Email", key="signup_email")
+        new_password = st.text_input("Password (min 6 characters)", type="password", key="signup_password")
+        if st.button("Create account"):
+            try:
+                auth.sign_up(auth.new_client(), new_email, new_password)
+                st.success("Account created. Now go to the Log in tab.")
+            except Exception as e:
+                st.error(f"Sign up failed: {e}")
+
+    st.stop()
+
+
+# ---------- Per-session state (only reached after login) ----------
 
 if "kb" not in st.session_state:
-    st.session_state.kb = KnowledgeBase(get_embeddings())
+    st.session_state.kb = KnowledgeBase(
+        get_embeddings(), st.session_state.client, st.session_state.user_id
+    )
     st.session_state.workflow = build_graph(st.session_state.kb, get_generator())
     st.session_state.messages = []
 
 kb: KnowledgeBase = st.session_state.kb
 
 
-# ---------- Sidebar: documents and settings ----------
+# ---------- Sidebar: account, documents and settings ----------
 
 with st.sidebar:
+    st.caption(f"Signed in as {st.session_state.email}")
+    if st.button("Log out"):
+        auth.sign_out(st.session_state.client)
+        st.session_state.clear()
+        st.rerun()
+
+    st.divider()
     st.header("📄 Documents")
     uploads = st.file_uploader("Upload PDFs", type="pdf", accept_multiple_files=True)
 
     # The uploader is the source of truth: index new files, drop removed ones.
     uploaded = {f.name: f for f in uploads or []}
-    for name in [n for n in kb.files if n not in uploaded]:
+    for name in [n for n in kb.files if n not in uploaded and n in st.session_state.get("seen", set())]:
         kb.remove(name)
     for name, f in uploaded.items():
         if name in kb.files:
@@ -54,6 +97,7 @@ with st.sidebar:
             st.warning(f"No text found in {name}. Is it a scanned PDF?")
         else:
             st.toast(f"Indexed {name} ({n_chunks} chunks)")
+    st.session_state["seen"] = set(uploaded)
 
     if not kb.is_empty():
         st.caption("Indexed documents")

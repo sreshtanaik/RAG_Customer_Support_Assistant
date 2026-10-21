@@ -12,7 +12,7 @@ TOP_K = int(os.getenv("TOP_K", "3"))                     # chunks retrieved per 
 
 # Chroma returns a distance: lower means closer. If even the best chunk is
 # further away than this, the question is escalated to a human agent.
-THRESHOLD = float(os.getenv("THRESHOLD", "1.3"))
+THRESHOLD = float(os.getenv("THRESHOLD", "0.8"))
 
 MAX_CONTEXT_CHARS = 1500   # flan-t5 only reads 512 tokens, so keep the prompt short
 MAX_NEW_TOKENS = 150

@@ -10,7 +10,7 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))   # characters repeated b
 
 TOP_K = int(os.getenv("TOP_K", "3"))                     # chunks retrieved per question
 
-# Chroma returns a distance: lower means closer. If even the best chunk is
+# pgvector returns a distance: lower means closer. If even the best chunk is
 # further away than this, the question is escalated to a human agent.
 THRESHOLD = float(os.getenv("THRESHOLD", "0.8"))
 
